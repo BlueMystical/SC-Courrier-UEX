@@ -157,6 +157,23 @@ const BASE_PRESETS = { aura: Aura, material: Material, lara: Lara, nora: Nora }
     // Montar la aplicación
     app.mount('#app')
 
+    async function syncTerminalsFromRenderer() {
+      try {
+        console.log('[UEX] 🔄 Fetching terminals from renderer...')
+
+        const response = await fetch('https://api.uexcorp.uk/2.0/terminals')
+        const data = await response.json()
+
+        await window.api.invoke('uex:cacheTerminals', data)
+
+        console.log('[UEX] ✅ Terminals synced successfully')
+      } catch (err) {
+        console.error('[UEX] ❌ Renderer sync failed:', err)
+      }
+    }
+
+    syncTerminalsFromRenderer()
+
     console.log('  ✓ App mounted successfully')
   } catch (error) {
     console.error('❌ Error initializing app:', error)

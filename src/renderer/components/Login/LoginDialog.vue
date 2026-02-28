@@ -46,15 +46,10 @@
             </IconField>
           </div>
 
-<div class="remember-me-section">
-    <Checkbox 
-        v-model="rememberMe" 
-        :binary="true" 
-        inputId="rememberMe" 
-        class="custom-checkbox"
-    />
-    <label for="rememberMe" class="remember-label">Remember my access</label>
-</div>
+          <div class="remember-me-section">
+            <Checkbox v-model="rememberMe" :binary="true" inputId="rememberMe" class="custom-checkbox" />
+            <label for="rememberMe" class="remember-label">Remember my access</label>
+          </div>
 
           <div class="button-container">
             <Button type="button" :label="loading ? 'Validating...' : 'Sign-In'"
@@ -121,7 +116,7 @@ watch(() => props.visible, async (newVal) => {
     }
 
     await nextTick();
-    
+
     // 3. Foco Dinámico mejorado
     if (credentials.value.username && credentials.value.password) {
       // Si ambos están llenos (auto-fill), ponemos el foco en el botón de login
@@ -149,6 +144,25 @@ watch(visible, (newVal) => emit('update:visible', newVal));
 function focusPassword() {
   const inputEl = passwordInput.value?.$el.querySelector('input');
   if (inputEl) inputEl.focus();
+}
+
+// Descarga el avatar y lo convierte a base64 para evitar requests externas posteriores
+// que podrían ser bloqueadas por el interceptor de headers de Electron.
+async function fetchAvatarAsBase64(url) {
+  if (!url) return null
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const blob = await response.blob()
+    return await new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result)
+      reader.onerror = () => resolve(null)
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
 }
 
 // 3. LÓGICA DE VALIDACIÓN (MODO DESARROLLO / MOCK)
@@ -218,35 +232,37 @@ async function handleLogin(closeCallback) {
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
-      }); 
+      });
     const data = await response.json(); console.log('Respuesta de la API:', data);
 
     if (data.status === 'ok') {
       console.log('Login Exitoso. Perfil cargado:', data);
       const userData = {
-        id:       data.data.id,
+        id: data.data.id,
         username: data.data.username,
         fullName: data.data.name,
-        photo:    data.data.avatar,
-        role:     data.data.is_datarunner > 0 ? 'Data Runner' : 'User',
-        token:    credentials.value.password, //<- Guardamos el Secret-Key para futuras llamadas a la API (si es necesario)
+        photo: (await fetchAvatarAsBase64(data.data.avatar)) || data.data.avatar,
+        role: data.data.is_datarunner > 0 ? 'Data Runner' : 'User',
+        token: credentials.value.password, //<- Guardamos el Secret-Key para futuras llamadas a la API (si es necesario)
         funcionalidades: [
           {
             label: 'Buy or Sell',
             icon: 'pi pi-shopping-cart', //<- https://primevue.org/icons/
             items: [
-              { label: 'Comodities',   icon: 'pi pi-box',            shortcut: shortcuts.commodities,   route: '/buysell/comodities' }, //<- Ruta como esta declarada en router.js
-              { label: 'Items',        icon: 'pi pi-objects-column', shortcut: shortcuts.items,         route: '/buysell/items' },
-              { label: 'Vehicles',     icon: 'pi pi-car',            shortcut: shortcuts.vehicles,      route: '/buysell/vehicles' },
-              { label: 'Marketplace',  icon: 'pi pi-shopping-bag',   shortcut: shortcuts.marketplace,   route: '/buysell/marketplace' }             
+              { label: 'Comodities', icon: 'pi pi-box', shortcut: shortcuts.commodities, route: '/buysell/comodities' }, //<- Ruta como esta declarada en router.js
+              { label: 'Items', icon: 'pi pi-objects-column', shortcut: shortcuts.items, route: '/buysell/items' },
+              { label: 'Vehicles', icon: 'pi pi-car', shortcut: shortcuts.vehicles, route: '/buysell/vehicles' },
+              { label: 'Marketplace', icon: 'pi pi-shopping-bag', shortcut: shortcuts.marketplace, route: '/buysell/marketplace' }
             ]
           },
           {
             label: 'Data Courrier',
             icon: 'pi pi-server',
             items: [
-              { label: 'Contracts',     icon: 'pi pi-book',   route: '/contracts' },
-              { label: 'OCR Captures',  icon: 'pi pi-camera', route: '/ocr-captures' }
+              //{ label: 'Contracts', icon: 'pi pi-book', route: '/contracts' },
+              { label: 'Datarunner Captures', icon: 'pi pi-camera', shortcut: shortcuts.datarunnerCapture, route: '/datarunner-capture' },
+              { label: 'UEX Notifications', icon: 'pi pi-bell', route: '/uex-notifications' },
+              { label: 'Where to go', icon: 'pi pi-globe', route: '/places-to-visit' }
             ]
           }
         ],
@@ -258,10 +274,10 @@ async function handleLogin(closeCallback) {
       await window.api.Settings.set('settings/security/rememberMe', rememberMe.value);
 
       if (rememberMe.value) {
-          await window.api.Settings.set('settings/security/user', userData);
+        await window.api.Settings.set('settings/security/user', userData);
       } else {
-          // Si desmarcan la opción, borramos el rastro por privacidad
-          await window.api.Settings.set('settings/security/user', null);
+        // Si desmarcan la opción, borramos el rastro por privacidad
+        await window.api.Settings.set('settings/security/user', null);
       }
       // ------------------------------------
 
@@ -342,50 +358,52 @@ function resetForm() {
 }
 
 .remember-me-section {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.2rem 0.5rem;
-    margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .remember-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6); /* Gris claro para que no compita con los inputs */
-    cursor: pointer;
-    user-select: none;
-    transition: color 0.2s;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+  /* Gris claro para que no compita con los inputs */
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
 }
 
 .remember-me-section:hover .remember-label {
-    color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Estilización profunda del Checkbox para Modo Oscuro */
 :deep(.custom-checkbox .p-checkbox-box) {
-    background: rgba(0, 0, 0, 0.4) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    transition: all 0.2s;
-    width: 18px;
-    height: 18px;
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s;
+  width: 18px;
+  height: 18px;
 }
 
 /* Estado cuando está marcado */
 :deep(.custom-checkbox .p-checkbox-box.p-highlight) {
-    background: var(--p-primary-500) !important;
-    border-color: var(--p-primary-400) !important;
-    box-shadow: 0 0 10px var(--p-primary-900); /* Efecto neón sutil */
+  background: var(--p-primary-500) !important;
+  border-color: var(--p-primary-400) !important;
+  box-shadow: 0 0 10px var(--p-primary-900);
+  /* Efecto neón sutil */
 }
 
 /* Icono interno (el check) */
 :deep(.custom-checkbox .p-checkbox-icon) {
-    color: white !important;
-    font-size: 10px;
+  color: white !important;
+  font-size: 10px;
 }
 
 /* Hover sobre el cuadrito */
 :deep(.custom-checkbox:not(.p-disabled):hover .p-checkbox-box) {
-    border-color: var(--p-primary-400) !important;
+  border-color: var(--p-primary-400) !important;
 }
 
 /* Estilización de IconField e Inputs: 

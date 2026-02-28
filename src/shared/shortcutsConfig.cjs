@@ -37,6 +37,13 @@ const shortcutsConfig = [
     icon: 'pi pi-cog',
     defaultShortcut: 'Alt+S',
   },
+  {
+    key: 'datarunnerCapture',
+    label: 'Data Runner Capture',
+    route: '/datarunner-capture',
+    icon: 'pi pi-camera',
+    defaultShortcut: 'Alt+D',
+  },
 ]
 
 const routeMap = Object.fromEntries(

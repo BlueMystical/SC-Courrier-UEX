@@ -39,12 +39,20 @@
           "*.js"
         ]
       },
-      "!dist/renderer/.vite"
+      "!dist/renderer/.vite",
+      "tessdata/**/*"
     ],
     "extraResources": [
       {
         "from": "resources",
         "to": "resources",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "tessdata",
+        "to": "tessdata",
         "filter": [
           "**/*"
         ]
@@ -171,10 +179,15 @@
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
     "@primevue/themes": "^4.5.4",
+    "axios": "^1.13.5",
+    "dotenv": "^17.3.1",
+    "fuse.js": "^7.1.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.4",
+    "sharp": "^0.34.5",
+    "tesseract.js": "^7.0.0",
     "vue": "^3.5.27",
     "vue-router": "^4.6.4"
   }

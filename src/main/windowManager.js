@@ -1,5 +1,4 @@
 // src/main/windowManager.js
-
 const { BrowserWindow, app, shell, Menu } = require('electron')
 const path = require('path')
 const windows = {}
@@ -88,28 +87,14 @@ function createWindow(id, route = '/', options = {}) {
         return { action: 'deny' }
     })
 
-    // Spoof request headers for external image domains that check Referer/User-Agent
-    win.webContents.session.webRequest.onBeforeSendHeaders(
-        { urls: ['https://*.uexcorp.space/*', 'https://*.uexcorp.uk/*', 'https://*.robertsspaceindustries.com/*'] },
-        (details, callback) => {
-            const headers = { ...details.requestHeaders }
-            headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-            headers['Referer']    = 'https://uexcorp.space/'
-            headers['Origin']     = 'https://uexcorp.space'
-            delete headers['sec-fetch-site']
-            delete headers['sec-fetch-mode']
-            delete headers['sec-fetch-dest']
-            callback({ requestHeaders: headers })
-        }
-    )
-
+    // 
     win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
         callback({
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
                     "default-src 'self';" +
-                    "img-src 'self' data: https://assets.uexcorp.space https://media.robertsspaceindustries.com https://robertsspaceindustries.com;" +
+                    "img-src 'self' data: https://*.uexcorp.space https://media.robertsspaceindustries.com https://robertsspaceindustries.com;" +
                     "script-src 'self';" +
                     "style-src 'self' 'unsafe-inline';" +
                     "connect-src 'self' https://api.uexcorp.uk;"

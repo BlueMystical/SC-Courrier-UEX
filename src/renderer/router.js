@@ -22,6 +22,13 @@ const routes = [
     component: () => import('./views/BuySell/Vehicles.vue'),
     meta: { title: 'Vehicle Market' }
   },
+  { path: '/buysell/marketplace', component: () => import('@/views/BuySell/Marketplace.vue') },
+  {
+    path: '/datarunner-capture',
+    name: 'DatarunnerCaptures',
+    component: () => import('./views/Datarunner/DatarunnerCaptures.vue'),
+    meta: { title: 'Datarunner Captures' }
+  },
   // otras rutas aquí
   {
     path: '/:pathMatch(.*)*',

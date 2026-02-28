@@ -10,6 +10,10 @@ const getInitialRoute = () => {
 contextBridge.exposeInMainWorld('api', {
   getInitialRoute, // Exponer función para obtener ruta inicial
 
+  invoke: (channel, data) => ipcRenderer.invoke(channel, data),
+  send: (channel, data) => ipcRenderer.send(channel, data),
+  on: (channel, callback) => ipcRenderer.on(channel, (_, ...args) => callback(...args)),
+
   Windows: {  //<- winodw.api.Windows..
     openWindow: (route, options) => ipcRenderer.send('open-window', { route, options }),
     navigateMain: (route) => ipcRenderer.send('navigate-main', route)
@@ -34,7 +38,7 @@ contextBridge.exposeInMainWorld('api', {
     terminateProgram: (exeName, options) => ipcRenderer.invoke('file:terminateProgram', exeName, options),
     runScriptOrProgram: (filePath, args) => ipcRenderer.invoke('file:runScriptOrProgram', filePath, args),
   },
-   Navigation: {
+  Navigation: {
     onNavigateTo: (callback) => {
       ipcRenderer.on('navigate-to', (event, route) => callback(route))
     },
@@ -42,7 +46,7 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.removeAllListeners('navigate-to')
     }
   },
-   Shortcuts: {
+  Shortcuts: {
     get: () => ipcRenderer.invoke('shortcuts:get'),
     update: (shortcuts) => ipcRenderer.invoke('shortcuts:update', shortcuts),
   },
@@ -114,5 +118,51 @@ contextBridge.exposeInMainWorld('api', {
     onDownloadProgress: (callback) => ipcRenderer.on('download-progress', callback),
     removeDownloadProgress: (callback) => ipcRenderer.removeListener('download-progress', callback),
 
+  },
+
+  // ── SCREENSHOT WATCHER ──────────────────────────────────────────
+  // window.api.Screenshots.*
+  Screenshots: {
+    // Get current watched folder and the SC default path
+    getFolder: () => ipcRenderer.invoke('screenshots:get-folder'),
+
+    // Open a native folder picker and save the result
+    pickFolder: () => ipcRenderer.invoke('screenshots:pick-folder'),
+
+    // Restart the watcher (call after changing the folder in Settings)
+    restartWatcher: () => ipcRenderer.invoke('screenshots:restart-watcher'),
+
+    // Called when a new screenshot is detected — { filename, filePath, dataUrl, base64, mimeType, size, timestamp }
+    onNew: (callback) => ipcRenderer.on('screenshot:new', (_, data) => callback(data)),
+    offNew: () => ipcRenderer.removeAllListeners('screenshot:new'),
+
+    // Called when the watched folder doesn't exist
+    onFolderMissing: (callback) => ipcRenderer.on('screenshot:folder-missing', (_, data) => callback(data)),
+    offFolderMissing: () => ipcRenderer.removeAllListeners('screenshot:folder-missing'),
+
+    // Called when a file is too large to process
+    onTooLarge: (callback) => ipcRenderer.on('screenshot:too-large', (_, data) => callback(data)),
+
+    // Called when watcher starts successfully
+    onWatcherStarted: (callback) => ipcRenderer.on('screenshot:watcher-started', (_, data) => callback(data)),
+
+    // Called on watcher error
+    onWatcherError: (callback) => ipcRenderer.on('screenshot:watcher-error', (_, data) => callback(data)),
+  },
+
+  // ── OCR ─────────────────────────────────────────────────────────
+  // window.api.OCR.*
+  OCR: {
+    // Process a screenshot: { base64, mimeType } → { success, rawText, type, items, processedImageBase64 }
+    process: (data) => ipcRenderer.invoke('ocr:process', data),
+  },
+  UEX: {
+    checkToken: () => ipcRenderer.invoke('uex:checkToken'),
+    saveToken: (token) => ipcRenderer.invoke('uex:saveToken', token),
+    initialSync: () => ipcRenderer.invoke('uex:initialSync'),
+    validateToken: () => ipcRenderer.invoke('uex:validateToken'),
+    submitCommodity: (data) => ipcRenderer.invoke('uex:submitCommodity', data),
+    submitItem: (data) => ipcRenderer.invoke('uex:submitItem', data),
+    getCache: () => ipcRenderer.invoke('uex:getCache')
   },
 })

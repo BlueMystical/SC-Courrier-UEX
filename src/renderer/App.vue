@@ -5,31 +5,30 @@
         <div v-if="!hideMenubar" class="card p-0">
             <Menubar :model="menubarItems" class="custom-menubar">
 
-<template #item="{ item, props, hasSubmenu }">
-    <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-        <a v-ripple :href="href" v-bind="props.action" @click="navigate" class="flex align-items-center">
-            <img v-if="item.image" :src="item.image" :alt="item.label" class="menu-item-image" />
-            <span v-else-if="item.icon" :class="item.icon" />
-            <span class="ml-2">{{ item.label }}</span>
+                <template #item="{ item, props, hasSubmenu }">
+                    <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+                        <a v-ripple :href="href" v-bind="props.action" @click="navigate" class="flex align-items-center">
+                            <img v-if="item.image" :src="item.image" :alt="item.label" class="menu-item-image" />
+                            <span v-else-if="item.icon" :class="item.icon" />
+                            <span class="ml-2">{{ item.label }}</span>
+                            <span v-if="item.shortcut" class="menu-shortcut-badge">
+                                {{ item.shortcut }}
+                            </span>
+                        </a>
+                    </router-link>
 
-            <span v-if="item.shortcut" class="menu-shortcut-badge">
-                {{ item.shortcut }}
-            </span>
-        </a>
-    </router-link>
+                    <a v-else v-ripple :href="item.url" :target="item.target" v-bind="props.action"
+                        class="flex align-items-center">
+                        <img v-if="item.image" :src="item.image" :alt="item.label" class="menu-item-image" />
+                        <span v-else-if="item.icon" :class="item.icon" />
+                        <span class="ml-2">{{ item.label }}</span>
+                        <span v-if="item.shortcut" class="menu-shortcut-badge">
+                            {{ item.shortcut }}
+                        </span>
 
-    <a v-else v-ripple :href="item.url" :target="item.target" v-bind="props.action" class="flex align-items-center">
-        <img v-if="item.image" :src="item.image" :alt="item.label" class="menu-item-image" />
-        <span v-else-if="item.icon" :class="item.icon" />
-        <span class="ml-2">{{ item.label }}</span>
-
-        <span v-if="item.shortcut" class="menu-shortcut-badge">
-            {{ item.shortcut }}
-        </span>
-        
-        <span v-if="hasSubmenu" class="pi pi-fw pi-angle-down ml-2" />
-    </a>
-</template>
+                        <span v-if="hasSubmenu" class="pi pi-fw pi-angle-down ml-2" />
+                    </a>
+                </template>
 
                 <template #end>
                     <div class="flex items-center">
@@ -124,12 +123,24 @@ const verificarInactividad = () => {
     }
 };
 
+async function checkUEXToken() {
+  const hasToken = await window.api.UEX.checkToken()
+
+  if (!hasToken) {
+    notify.sticky(
+      'Debes configurar tu UEX API Token para habilitar la subida de datos.',
+      'UEX no configurado',
+      'warn'
+    )
+  }
+}
+
 // Computed para ocultar/mostrar menubar
 const hideMenubar = computed(() => route.meta.hideMenubar || false);
 
 // --- CONFIGURACIÓN DEL MENUBAR ---
 const menubarItems = computed(() => {
-    const s = store.shortcuts || {}; 
+    const s = store.shortcuts || {};
 
     return [
         {
@@ -218,6 +229,8 @@ onMounted(async () => {
         });
     }
 
+    await checkUEXToken()
+
     window.api?.Navigation?.onNavigateTo((ruta) => {
         router.push(ruta)
     })
@@ -254,6 +267,7 @@ body,
     object-fit: contain;
     vertical-align: middle;
 }
+
 .card.p-0 {
     padding: 2px !important;
     border-radius: 6px;
@@ -308,17 +322,19 @@ body,
 }
 
 .menu-shortcut-badge {
-    margin-left: auto; /* Empuja el atajo a la derecha */
+    margin-left: auto;
+    /* Empuja el atajo a la derecha */
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
     font-size: 0.7rem;
     font-weight: 600;
-    
+
     /* Usando variables de PrimeVue para coherencia de color */
     color: var(--p-primary-color);
-    background: var(--p-secondary-100); /* Un fondo suave del color secundario */
+    background: var(--p-secondary-100);
+    /* Un fondo suave del color secundario */
     border: 1px solid var(--p-secondary-200);
-    
+
     /* En modo oscuro, ajustamos un poco */
     transition: background 0.2s;
 }
