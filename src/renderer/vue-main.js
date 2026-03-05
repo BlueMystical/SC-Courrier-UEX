@@ -174,6 +174,55 @@ const BASE_PRESETS = { aura: Aura, material: Material, lara: Lara, nora: Nora }
 
     syncTerminalsFromRenderer()
 
+    // ── Item catalogue sync ───────────────────────────────────────────────────
+    // Fetch all items from UEX API and send to main process cache.
+    // Called on startup AND whenever main sends 'items-cache:request-sync' (force/24h refresh).
+    async function syncItemsFromRenderer() {
+      try {
+        console.log('[ItemCache] 🔄 Fetching item categories from renderer...')
+        const BASE = 'https://api.uexcorp.uk/2.0'
+
+        // 1. Fetch categories
+        const catRes = await fetch(`${BASE}/categories?type=item`)
+        const catData = await catRes.json()
+        if (catData.status !== 'ok') throw new Error(`categories API: ${catData.status}`)
+        const categories = catData.data || []
+        console.log(`[ItemCache] Found ${categories.length} categories — fetching items...`)
+
+        // 2. Fetch items per category (sequential, polite)
+        const allItems = []
+        for (let i = 0; i < categories.length; i++) {
+          const cat = categories[i]
+          try {
+            const res = await fetch(`${BASE}/items?id_category=${cat.id}`)
+            const data = await res.json()
+            if (data.status === 'ok') allItems.push(...(data.data || []))
+            console.log(`[ItemCache]  ✓ [${i+1}/${categories.length}] ${cat.name}: ${data.data?.length ?? 0} items`)
+          } catch (e) {
+            console.warn(`[ItemCache] ⚠️  Category ${cat.id} (${cat.name}) failed: ${e.message}`)
+          }
+          // Small delay between requests
+          if (i < categories.length - 1) await new Promise(r => setTimeout(r, 200))
+        }
+
+        // 3. Send to main process to cache
+        await window.api.invoke('uex:cacheItems', { categories, items: allItems })
+        console.log(`[ItemCache] ✅ ${allItems.length} items synced to main cache`)
+
+      } catch (err) {
+        console.error('[ItemCache] ❌ Renderer sync failed:', err)
+        await window.api.invoke('uex:cacheItemsError', err.message)
+      }
+    }
+
+    syncItemsFromRenderer()
+
+    // Listen for re-sync requests from main (force sync / 24h refresh)
+    window.api.on('items-cache:request-sync', () => {
+      console.log('[ItemCache] 📡 Re-sync requested by main process')
+      syncItemsFromRenderer()
+    })
+
     console.log('  ✓ App mounted successfully')
   } catch (error) {
     console.error('❌ Error initializing app:', error)

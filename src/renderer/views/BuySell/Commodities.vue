@@ -1,16 +1,20 @@
 <!-- src/renderer/views/BuySell/Commodities.vue -->
 <template>
-    <div class="p-component-wrapper py-5 px-4 md:px-6">
-        <div class="flex flex-column gap-6">
+    <div class="commodities-layout">
 
-            <section class="search-section card shadow-2 border-round-xl p-5 mb-2">
-                <h2 class="m-0 mb-5 text-primary flex align-items-center gap-3">Commodity Market Search
+        <!-- ================= HEADER FIJO ================= -->
+        <div class="commodities-header">
+            <section class="search-section card shadow-2 border-round-xl p-5">
+                <h2 class="m-0 mb-5 text-primary flex align-items-center gap-3">
+                    Commodity Market Search
                     <i class="pi pi-search" style="font-size: 1.5rem"></i>
                 </h2>
 
                 <div class="flex flex-column gap-5">
                     <div class="flex flex-column gap-3">
-                        <label class="font-bold text-xl text-700 ml-1">Commodity Name & Quantity (SCU)</label>
+                        <label class="font-bold text-xl text-700 ml-1">
+                            Commodity Name & Quantity (SCU)
+                        </label>
 
                         <div class="custom-input-wrapper shadow-1">
                             <i class="pi pi-box box-icon"></i>
@@ -21,7 +25,9 @@
                                 class="flex-grow-1" inputClass="custom-input" @item-select="onCommoditySelect">
                                 <template #optiongroup="slotProps">
                                     <div class="flex align-items-center py-2 px-3 bg-gray-100 font-bold text-primary">
-                                        <span class="uppercase text-xs">{{ slotProps.option.label }}</span>
+                                        <span class="uppercase text-xs">
+                                            {{ slotProps.option.label }}
+                                        </span>
                                     </div>
                                 </template>
                             </AutoComplete>
@@ -29,7 +35,6 @@
                             <div class="input-divider"></div>
 
                             <div class="flex align-items-center px-3" style="width: 140px;">
-                                <!-- FIX #3 y #11: validación correcta de null en el input -->
                                 <InputNumber :modelValue="quantity" @input="handleQuantityChange" :min="1"
                                     inputClass="qty-input" variant="filled" placeholder="Qty" :useGrouping="false" />
                             </div>
@@ -40,23 +45,26 @@
                     </div>
 
                     <div v-if="selectedCommodity" class="mt-4 animate-in fade-in">
-                        <SelectButton v-model="filterMode" :options="filterOptions" optionLabel="label" optionValue="value"
-                            class="w-full" />
+                        <SelectButton v-model="filterMode" :options="filterOptions" optionLabel="label"
+                            optionValue="value" class="w-full" />
                     </div>
                 </div>
             </section>
-            <br>
-            <!-- FIX #7 y #8: mostrar DataView siempre que haya selectedCommodity, usando #empty para sin resultados -->
-            <section v-if="selectedCommodity"
-                class="results-section border-round-xl shadow-3 overflow-hidden bg-card w-full">
-                <!-- FIX #12: rowsPerPageOptions añadido -->
+        </div>
+
+        <!-- ================= ZONA SCROLLEABLE ================= -->
+        <div class="commodities-scroll">
+            <section v-if="selectedCommodity" class="results-section border-round-xl shadow-3 bg-card w-full">
                 <DataView :value="filteredPrices" paginator :rows="10" :rowsPerPageOptions="[5, 10, 25, 50]">
                     <template #list="slotProps">
                         <div class="flex flex-column w-full px-2">
                             <div v-for="(item, index) in slotProps.items" :key="item.id || index"
                                 class="terminal-row w-full">
                                 <div class="grid-container">
-                                    <div class="col-terminal font-bold">{{ item.terminal_name }}</div>
+                                    <div class="col-terminal font-bold">
+                                        {{ item.terminal_name }}
+                                    </div>
+
                                     <div class="col-buy label-header">Buy (Total)</div>
                                     <div class="col-sell label-header">Sell (Total)</div>
 
@@ -82,7 +90,6 @@
                                         <span v-else class="text-700">--</span>
                                     </div>
 
-                                    <!-- FIX #10: formatLocation ya no incluye terminal_name para evitar duplicado -->
                                     <div class="col-location text-500 italic text-xs opacity-70">
                                         {{ formatLocation(item) }}
                                     </div>
@@ -96,12 +103,14 @@
                         </div>
                     </template>
 
-                    <!-- FIX #7: slot #empty para cuando no hay precios disponibles -->
                     <template #empty>
-                        <div class="flex flex-column align-items-center justify-content-center py-8 text-center bg-card">
+                        <div
+                            class="flex flex-column align-items-center justify-content-center py-8 text-center bg-card">
                             <i class="pi pi-search-minus text-primary opacity-50 mb-3" style="font-size: 3rem"></i>
                             <h3 class="m-0 text-700">No market data found</h3>
-                            <p class="text-500 mt-2">There are no prices available for the current filters.</p>
+                            <p class="text-500 mt-2">
+                                There are no prices available for the current filters.
+                            </p>
                             <Button v-if="filterMode !== 'all'" label="Show All Terminals" icon="pi pi-filter-slash"
                                 class="p-button-text mt-3" @click="filterMode = 'all'" />
                         </div>
@@ -109,6 +118,7 @@
                 </DataView>
             </section>
         </div>
+
     </div>
 </template>
 
@@ -254,14 +264,32 @@ const filteredPrices = computed(() => {
 </script>
 
 <style scoped>
+/* ================= LAYOUT BASE ================= */
+
+.commodities-layout {
+    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 20px;
+    background-color: var(--p-content-background);
+}
+
+.commodities-header {
+    flex-shrink: 0;
+}
+
+.commodities-scroll {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 20px;
+}
+
+/* ================= ESTILOS EXISTENTES ================= */
+
 .cursor-pointer {
     cursor: help !important;
     border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
-}
-
-.p-component-wrapper {
-    min-height: 100vh;
-    background-color: var(--p-content-background);
 }
 
 .custom-input-wrapper {
@@ -323,9 +351,7 @@ const filteredPrices = computed(() => {
 }
 
 .terminal-row {
-    padding: 1.5rem 0;
-    padding-left: 1rem;   /* ← agrega esto */
-    padding-right: 1rem;  /* ← y esto */
+    padding: 1.5rem 1rem;
     border-top: 1px solid var(--p-content-border-color);
 }
 

@@ -144,7 +144,7 @@ const menubarItems = computed(() => {
 
     return [
         {
-            label: 'SC-Courrier-UEX',
+            label: 'Courrier-UEX',
             image: new URL('@/assets/SC-Courrier-UEX_Logo_01.ico', import.meta.url).href,
             items: [
                 {

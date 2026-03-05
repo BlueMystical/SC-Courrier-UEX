@@ -595,11 +595,16 @@ ipcMain.handle('file:downloadAsset', async (event, url, destination) => {
   return downloadAsset(url, destination);
 });
 
-ipcMain.handle('download-file', async (event, url, filePath) => {
+ipcMain.handle('file:downloadFile', async (event, url, filePath) => {
   return downloadFile(url, filePath, (progress, speed) => {
     event.sender.send('download-progress', { progress, speed });
   });
 });
+
+ipcMain.handle('file:readAsBase64', async (_, filePath) => {
+  const buf = await fs.readFile(filePath)
+  return buf.toString('base64')
+})
 
 // #endregion
 

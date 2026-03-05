@@ -5,6 +5,7 @@ const path = require('path')
 const packageJson = require('../../package.json')
 const uexService = require('./services/uexService')
 const { processOCR } = require('./services/ocrService')
+const itemCacheService = require('./services/itemCacheService')
 
 
 // 1. Identity configuration
@@ -190,33 +191,7 @@ app.whenReady().then(async () => {
 })
 
 
-/**
- * Resolve the screenshots folder:
- * 1. Use saved setting if present and folder exists
- * 2. Fall back to SC default path if it exists
- * 3. Return null → renderer will ask the user to configure it
- */
-function resolveScreenshotsFolder() {
-  const saved = settingsHelper.getSetting('settings/paths/screenshotsFolder')
-  if (saved && fs.existsSync(saved)) return saved
 
-  const defaultPath = screenshotWatcher.getDefaultPath()
-  if (fs.existsSync(defaultPath)) return defaultPath
-
-  return null
-}
-
-function initScreenshotWatcher(win) {
-  const folder = resolveScreenshotsFolder()
-  if (folder) {
-    screenshotWatcher.startWatcher(folder, win)
-    win.webContents.send('screenshot:watcher-started', { path: folder })
-  } else {
-    win.webContents.send('screenshot:folder-missing', {
-      path: screenshotWatcher.getDefaultPath()
-    })
-  }
-}
 
 
 app.on('will-quit', () => {
@@ -265,7 +240,26 @@ ipcMain.handle('uex:getCache', async () => {
 ipcMain.handle('uex:cacheTerminals', async (_, data) => {
   const uexCache = require('./helpers/uexCache')
   uexCache.set('terminals', data)
-  console.log('[UEX] ✅ Terminals cached from renderer', data.data.length, 'items')
+  console.log('[UEX] ✅ Terminals cached from renderer', data?.data?.length ?? data, 'items')
+  return true
+})
+
+ipcMain.handle('uex:cacheCommodities', async (_, data) => {
+  const uexCache = require('./helpers/uexCache')
+  uexCache.set('commodities', data)
+  console.log('[UEX] ✅ Commodities cached from renderer', data?.data?.length ?? 0, 'items')
+  return true
+})
+
+// Renderer delivers fetched items catalogue → store in cache
+ipcMain.handle('uex:cacheItems', async (_, { categories, items }) => {
+  itemCacheService.receiveSyncData({ categories, items })
+  return true
+})
+
+// Renderer reports items fetch error
+ipcMain.handle('uex:cacheItemsError', async (_, errorMsg) => {
+  itemCacheService.receiveSyncError(errorMsg)
   return true
 })
 ipcMain.handle('uex:getTerminals', async () => {
@@ -358,6 +352,34 @@ ipcMain.handle('get-version', () => app.getVersion())
 // SCREENSHOT WATCHER — IPC handlers
 // ─────────────────────────────────────────────
 
+/**
+ * Resolve the screenshots folder:
+ * 1. Use saved setting if present and folder exists
+ * 2. Fall back to SC default path if it exists
+ * 3. Return null → renderer will ask the user to configure it
+ */
+function resolveScreenshotsFolder() {
+  const saved = settingsHelper.getSetting('settings/paths/screenshotsFolder')
+  if (saved && fs.existsSync(saved)) return saved
+
+  const defaultPath = screenshotWatcher.getDefaultPath()
+  if (fs.existsSync(defaultPath)) return defaultPath
+
+  return null
+}
+
+function initScreenshotWatcher(win) {
+  const folder = resolveScreenshotsFolder()
+  if (folder) {
+    screenshotWatcher.startWatcher(folder, win)
+    win.webContents.send('screenshot:watcher-started', { path: folder })
+  } else {
+    win.webContents.send('screenshot:folder-missing', {
+      path: screenshotWatcher.getDefaultPath()
+    })
+  }
+}
+
 // Renderer asks: what folder are we watching?
 ipcMain.handle('screenshots:get-folder', () => ({
   folder: screenshotWatcher.getWatchedFolder(),
@@ -387,4 +409,3 @@ ipcMain.handle('screenshots:restart-watcher', () => {
   if (win) initScreenshotWatcher(win)
   return { folder: screenshotWatcher.getWatchedFolder() }
 })
-

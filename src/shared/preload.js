@@ -76,7 +76,10 @@ contextBridge.exposeInMainWorld('api', {
     getBaseName: (filePath, extension) => ipcRenderer.invoke('paths:getBaseName', filePath, extension),
 
     getAssetPath: (assetPath) => ipcRenderer.invoke('paths:getAssetPath', assetPath),
-    getAssetUrl: (assetPath) => ipcRenderer.invoke('paths:getAssetUrl', assetPath)
+    getAssetUrl: (assetPath) => ipcRenderer.invoke('paths:getAssetUrl', assetPath),
+
+    ShowOpenDialog: (options) => ipcRenderer.invoke('file:showOpenDialog', options),
+    ShowSaveDialog: (options) => ipcRenderer.invoke('file:showSaveDialog', options),
   },
   Files: {
     copy: (srcDir, destDir, ext) => ipcRenderer.invoke('file:copy', srcDir, destDir, ext),
@@ -156,6 +159,7 @@ contextBridge.exposeInMainWorld('api', {
     // Process a screenshot: { base64, mimeType } → { success, rawText, type, items, processedImageBase64 }
     process: (data) => ipcRenderer.invoke('ocr:process', data),
   },
+
   UEX: {
     checkToken: () => ipcRenderer.invoke('uex:checkToken'),
     saveToken: (token) => ipcRenderer.invoke('uex:saveToken', token),
@@ -163,6 +167,66 @@ contextBridge.exposeInMainWorld('api', {
     validateToken: () => ipcRenderer.invoke('uex:validateToken'),
     submitCommodity: (data) => ipcRenderer.invoke('uex:submitCommodity', data),
     submitItem: (data) => ipcRenderer.invoke('uex:submitItem', data),
-    getCache: () => ipcRenderer.invoke('uex:getCache')
+    getCache: () => ipcRenderer.invoke('uex:getCache'),
+  },
+
+  // ── ITEM CACHE ─────────────────────────────────────────────────────────────
+  // window.api.Items.*
+  Items: {
+    /** Get flat array of all cached items (for fuzzy-match / dropdowns).
+     *  Returns [] if background sync hasn't completed yet.
+     *  @returns {Promise<Array>}  */
+    getAll: () => ipcRenderer.invoke('items:getAll'),
+
+    /** Get cached item categories.
+     *  @returns {Promise<Array>}  */
+    getCategories: () => ipcRenderer.invoke('items:getCategories'),
+
+    /** Get current sync status.
+     *  @returns {Promise<{state, progress, total, done, cached, lastSync, error}>}  */
+    getSyncStatus: () => ipcRenderer.invoke('items:getSyncStatus'),
+
+    /** Force an immediate full re-sync. Progress events will fire on the events below.
+     *  @returns {Promise<object>} final status  */
+    forceSync: () => ipcRenderer.invoke('items:forceSync'),
+
+    /** Returns whether the item cache is fresh (< 24h old).
+     *  @returns {Promise<boolean>}  */
+    isCacheFresh: () => ipcRenderer.invoke('items:isCacheFresh'),
+
+    // ── Progress events (subscribe in your Vue component) ──────────────────
+    // Fired when background sync starts
+    onSyncStart: (cb) => ipcRenderer.on('items-cache:sync-start', (_, d) => cb(d)),
+    // Fired after categories are loaded: { count, categories[] }
+    onCategoriesLoaded: (cb) => ipcRenderer.on('items-cache:categories-loaded', (_, d) => cb(d)),
+    // Fired per category: { done, total, progress, category, section, count }
+    onProgress: (cb) => ipcRenderer.on('items-cache:progress', (_, d) => cb(d)),
+    // Fired when sync finishes: { total, errors, lastSync, fromCache? }
+    onSyncComplete: (cb) => ipcRenderer.on('items-cache:sync-complete', (_, d) => cb(d)),
+    // Fired on sync error: { error }
+    onSyncError: (cb) => ipcRenderer.on('items-cache:sync-error', (_, d) => cb(d)),
+
+    // Cleanup helpers
+    offAll: () => {
+      ipcRenderer.removeAllListeners('items-cache:sync-start')
+      ipcRenderer.removeAllListeners('items-cache:categories-loaded')
+      ipcRenderer.removeAllListeners('items-cache:progress')
+      ipcRenderer.removeAllListeners('items-cache:sync-complete')
+      ipcRenderer.removeAllListeners('items-cache:sync-error')
+    },
+  },
+
+  // ── CACHE MANAGEMENT ───────────────────────────────────────────────────────
+  // window.api.Cache.*  (for Settings/Debug UI)
+  Cache: {
+    /** Get stats for all cache keys.
+     *  @returns {Promise<Array<{key, count, ageMinutes, ttlHours, remainingHours, expired}>>}  */
+    getStats: () => ipcRenderer.invoke('cache:getStats'),
+
+    /** Invalidate a specific cache key (forces re-fetch on next use).
+     *  Valid keys: 'terminals', 'commodities', 'items', 'item_categories', 'stations'
+     *  @param {string} key
+     *  @returns {Promise<{success, key}>}  */
+    invalidate: (key) => ipcRenderer.invoke('cache:invalidate', key),
   },
 })

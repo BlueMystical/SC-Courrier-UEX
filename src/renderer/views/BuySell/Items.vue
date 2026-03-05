@@ -1,24 +1,27 @@
 <!-- src/renderer/views/BuySell/Items.vue -->
 <template>
-    <div class="p-component-wrapper py-5 px-4 md:px-6">
-        <div class="flex flex-column gap-6">
+    <div class="items-layout">
 
-            <section class="search-section card shadow-2 border-round-xl p-5 mb-2">
+        <!-- ================= HEADER FIJO ================= -->
+        <div class="items-header">
+            <section class="search-section card shadow-2 border-round-xl p-5">
                 <h2 class="m-0 mb-5 text-primary flex align-items-center gap-3">
                     Item Shop Finder
                     <i class="pi pi-tag" style="font-size: 1.5rem"></i>
                 </h2>
 
                 <div class="flex flex-column gap-3">
-                    <label class="font-bold text-xl text-700 ml-1">Category, Item & Quantity</label>
+                    <label class="font-bold text-xl text-700 ml-1">
+                        Category, Item & Quantity
+                    </label>
 
                     <div class="custom-input-wrapper shadow-1 flex align-items-center">
                         <i class="pi pi-search box-icon"></i>
 
-                        <Dropdown  ref="categoryDropdown"
-                            v-model="selectedCategory"  :options="groupedCategories" optionLabel="name"
-                            optionGroupLabel="label" optionGroupChildren="items" placeholder="Category"
-                            class="category-dropdown" @change="onCategoryChange" @show="onDropdownShow" filter>
+                        <Dropdown ref="categoryDropdown" v-model="selectedCategory" :options="groupedCategories"
+                            optionLabel="name" optionGroupLabel="label" optionGroupChildren="items"
+                            placeholder="Category" class="category-dropdown" @change="onCategoryChange"
+                            @show="onDropdownShow" filter>
                             <template #optiongroup="slotProps">
                                 <div class="group-header">
                                     <i class="pi pi-bookmark-fill mr-2"></i>
@@ -34,13 +37,11 @@
                             :disabled="!selectedCategory" @keyup.enter="handleEnterKey"
                             :placeholder="selectedCategory ? 'Search item... ENTER for List' : '← Select category'"
                             forceSelection class="search-input-container" inputClass="custom-input"
-                            @item-select="onItemSelect">
-                        </AutoComplete>
+                            @item-select="onItemSelect" />
 
                         <div class="input-divider"></div>
 
                         <div class="flex align-items-center px-2 quantity-wrapper">
-                            <!-- FIX #2: :deep() aplicado en estilos para que el ancho llegue al input interno -->
                             <InputNumber :modelValue="quantity" @input="handleQuantityChange" :min="1"
                                 inputClass="qty-input" variant="filled" placeholder="Qty" :useGrouping="false" />
                         </div>
@@ -50,27 +51,31 @@
                     </div>
 
                     <div v-if="selectedItem" class="mt-4 animate-in fade-in">
-                        <SelectButton v-model="filterMode" :options="filterOptions" optionLabel="label" optionValue="value"
-                            class="w-full" />
+                        <SelectButton v-model="filterMode" :options="filterOptions" optionLabel="label"
+                            optionValue="value" class="w-full" />
                     </div>
                 </div>
             </section>
-            <br>
-            <section class="results-section border-round-xl shadow-3 overflow-hidden bg-card w-full animate-in fade-in"
-                v-if="selectedItem">
-                <!-- FIX #8: rowsPerPageOptions añadido para permitir cambiar filas visibles -->
+        </div>
+
+        <!-- ================= ZONA SCROLLEABLE ================= -->
+        <div class="items-scroll">
+            <section v-if="selectedItem"
+                class="results-section border-round-xl shadow-3 bg-card w-full animate-in fade-in">
                 <DataView :value="filteredPrices" paginator :rows="10" :rowsPerPageOptions="[5, 10, 25, 50]">
                     <template #list="slotProps">
                         <div class="flex flex-column w-full px-4">
                             <div v-for="(item, index) in slotProps.items" :key="item.id || index"
                                 class="terminal-row w-full">
                                 <div class="grid-container">
-                                    <!-- FIX #9: grid-column explícito en cada celda via clases CSS -->
-                                    <div class="col-terminal font-bold">{{ item.terminal_name }}</div>
+
+                                    <div class="col-terminal font-bold">
+                                        {{ item.terminal_name }}
+                                    </div>
+
                                     <div class="col-buy label-header">Price (Total)</div>
                                     <div class="col-sell label-header">Buyback</div>
 
-                                    <!-- FIX #1: clase renombrada a col-item-name con estilos definidos -->
                                     <div class="col-item-name text-500 font-mono text-xs opacity-80">
                                         {{ item.item_name }}
                                     </div>
@@ -81,14 +86,18 @@
                                             class="text-green-500 cursor-pointer">
                                             {{ (item.price_buy * debouncedQuantity).toLocaleString('en-US') }}
                                         </span>
-                                        <span v-else class="text-700 font-normal italic text-sm">N/A</span>
+                                        <span v-else class="text-700 font-normal italic text-sm">
+                                            N/A
+                                        </span>
                                     </div>
 
                                     <div class="col-sell price-value">
                                         <span v-if="item.price_sell > 0" class="text-orange-500">
                                             {{ (item.price_sell * debouncedQuantity).toLocaleString('en-US') }}
                                         </span>
-                                        <span v-else class="text-500 font-normal italic text-sm">--</span>
+                                        <span v-else class="text-500 font-normal italic text-sm">
+                                            --
+                                        </span>
                                     </div>
 
                                     <div class="col-location text-500 italic text-xs opacity-70">
@@ -98,6 +107,7 @@
                                     <div class="col-faction text-right text-500 font-medium uppercase text-xs">
                                         v{{ item.game_version }}
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -108,15 +118,18 @@
                             class="flex flex-column align-items-center justify-content-center py-8 text-center bg-card">
                             <i class="pi pi-search-minus text-primary opacity-50 mb-3" style="font-size: 3rem"></i>
                             <h3 class="m-0 text-700">No market data found</h3>
-                            <p class="text-500 mt-2">There are no prices available for the current filters.</p>
+                            <p class="text-500 mt-2">
+                                There are no prices available for the current filters.
+                            </p>
                             <Button v-if="filterMode !== 'all'" label="Show All Prices" icon="pi pi-filter-slash"
                                 class="p-button-text mt-3" @click="filterMode = 'all'" />
                         </div>
                     </template>
+
                 </DataView>
             </section>
-
         </div>
+
     </div>
 </template>
 
@@ -183,7 +196,7 @@ const filterOptions = [
 ];
 const onDropdownShow = async () => {
     await nextTick();
-    
+
     // Intenta varios selectores según la versión de PrimeVue
     const selectors = [
         '.p-dropdown-filter',
@@ -196,9 +209,9 @@ const onDropdownShow = async () => {
     for (const selector of selectors) {
         const input = categoryDropdown.value?.$el
             ?.closest('body')
-            ?.querySelector(selector) 
+            ?.querySelector(selector)
             ?? document.querySelector(selector);
-        
+
         if (input) {
             input.focus();
             break;
@@ -306,6 +319,28 @@ const filteredPrices = computed(() => {
 </script>
 
 <style scoped>
+
+/* ================= LAYOUT BASE ================= */
+
+.items-layout {
+  height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px;
+  background-color: var(--p-content-background);
+}
+
+.items-header {
+  flex-shrink: 0;
+}
+
+.items-scroll {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 20px;
+}
+
 /* BUSCADOR */
 .custom-input-wrapper {
     display: flex;
