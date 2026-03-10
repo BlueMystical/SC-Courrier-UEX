@@ -19,3 +19,21 @@ chmod +x linux-build.sh
 # Ejecutar
 ./linux-build.sh
 
+-- Obtener Token de Github:
+https://github.com/settings/tokens
+
+# Windows PowerShell
+$env:GH_TOKEN="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"
+
+-- Publicar una nueva Version:
+# 1. Subir versión en package.json (ej: 1.0.0 → 1.1.0)
+# 2. Compilar y publicar directo a GitHub
+
+npm run build:prod:win
+publish.bat
+
+-- Archivos publicados en el Release:
+G:\@Proyectos\SC-Courrier-UEX\release
+Courrier-UEX Setup 0.3.1.exe — El instalador NSIS. Es el que el usuario descarga e instala normalmente. Tiene wizard, accesos directos, etc.
+Courrier-UEX Setup 0.3.1.exe.blockmap — Un mapa de bloques del instalador. Lo usa electron-updater para hacer actualizaciones diferenciales — en lugar de descargar el instalador completo cada vez, solo descarga los bloques que cambiaron. Hace las actualizaciones mucho más rápidas y livianas.
+latest.yml — El más importante para el auto-updater. Es un archivo de texto pequeño que contiene la versión actual, el nombre del archivo, su tamaño y su hash SHA512. Cuando tu app verifica si hay actualizaciones, descarga este archivo primero y compara la versión con la instalada. Si es mayor, ofrece actualizar. Sin este archivo el auto-updater está ciego.

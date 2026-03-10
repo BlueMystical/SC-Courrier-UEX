@@ -7,7 +7,6 @@ const path = require('path')
 const sharp = require('sharp')
 const uexCache = require('../helpers/uexCache')
 
-const TESSERACT_PATH = 'tesseract'
 const TMP_DIR = os.tmpdir()
 
 const SECTOR_A_BLACKLIST = [
@@ -82,6 +81,45 @@ const STOCK_STATUS_MAP = [
     patterns: ['MAXIMUM', 'MAX INV', 'MAK INV', 'MAX INV']
   },
 ]
+
+// ──────── TESSERACT OCR ─────────────────────────────────────
+// ── Tesseract paths ─────────────────────────
+function getTesseractPath() {
+  const defaultPath = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+  if (require('fs').existsSync(defaultPath)) return defaultPath
+  return 'tesseract'
+}
+
+function getTessdataPath() {
+  const { app } = require('electron')
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'tessdata')
+  }
+  return path.join(__dirname, '../../tessdata')
+}
+
+const TESSERACT_PATH = getTesseractPath()  
+
+function runTesseract(imagePath, psm = 6) {
+  const tessdataPath = getTessdataPath()
+  
+  console.log(`[Tesseract] bin: ${TESSERACT_PATH}`)      // ← usa la constante
+  console.log(`[Tesseract] tessdata: ${tessdataPath}`)
+  console.log(`[Tesseract] imagen: ${imagePath} (psm:${psm})`)
+
+  return new Promise((resolve, reject) => {
+    execFile(
+      TESSERACT_PATH,                                     // ← usa la constante
+      [imagePath, 'stdout', '-l', 'eng', '--psm', String(psm), '--tessdata-dir', tessdataPath],
+      (error, stdout) => {
+        if (error) { console.error('[Tesseract] ERROR:', error.message); return reject(error) }
+        console.log(`[Tesseract] OK. Caracteres leídos: ${stdout.length}`)
+        console.log(`[Tesseract] Raw output:\n${stdout}`)
+        resolve(stdout)
+      }
+    )
+  })
+}
 
 // ─────────────────────────────────────────────
 // Levenshtein + fuzzy match
@@ -200,21 +238,7 @@ function resolveItemNames(gridItems, cachedItems) {
 // ─────────────────────────────────────────────
 // Tesseract CLI (psm configurable)
 // ─────────────────────────────────────────────
-function runTesseract(imagePath, psm = 6) {
-  console.log(`[Tesseract] Ejecutando OCR sobre: ${imagePath} (psm:${psm})`)
-  return new Promise((resolve, reject) => {
-    execFile(
-      TESSERACT_PATH,
-      [imagePath, 'stdout', '-l', 'eng', '--psm', String(psm)],
-      (error, stdout) => {
-        if (error) { console.error('[Tesseract] ERROR:', error.message); return reject(error) }
-        console.log(`[Tesseract] OK. Caracteres leídos: ${stdout.length}`)
-        console.log(`[Tesseract] Raw output:\n${stdout}`)
-        resolve(stdout)
-      }
-    )
-  })
-}
+
 
 function isReasonableCandidate(text) {
   if (!text || text.length < 8) return false
@@ -1001,7 +1025,9 @@ async function extractSectorA(imageBuffer, colorScheme = 'blue', uiBounds = null
 
       // Continue with R-B pass on the nombre crop for additional OCR coverage
       const { data, info } = await sharp(nombreCropBuffer).raw().toBuffer({ resolveWithObject: true })
+      const ch = info.channels  // ✅ agregar esta línea
       const rb = Buffer.alloc(info.width * info.height)
+
       for (let i = 0; i < rb.length; i++) {
         rb[i] = Math.max(0, Math.min(255, data[i * ch] - data[i * ch + 2]))
       }

@@ -7,6 +7,7 @@ require('dotenv').config()
 const path = require('path')
 const packageJson = require('../../package.json')
 const fs = require('fs')
+const { setupAutoUpdater, checkForUpdates } = require('./updater')
 
 // #endregion
 
@@ -214,6 +215,11 @@ app.whenReady().then(async () => {
       initScreenshotWatcher(win)
       itemCacheService.startBackgroundSync(win)
     })
+
+    setupAutoUpdater()
+
+    // Verificar al arrancar, con un delay para que la app cargue primero
+    setTimeout(() => checkForUpdates(), 5000)
 
   } catch (err) {
     console.error('[APP] Fatal startup error:', err)

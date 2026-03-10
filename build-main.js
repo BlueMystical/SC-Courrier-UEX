@@ -47,12 +47,12 @@ console.log('📁 Creating output directories for electron-builder...');
 const outputDirs = [
     // Windows
     path.join(__dirname, 'release', 'installer'),
-    path.join(__dirname, 'release', 'portable'),
+    //path.join(__dirname, 'release', 'portable'),
     // Linux
-    path.join(__dirname, 'release', 'tarball'),
-    path.join(__dirname, 'release', 'appimage'),
-    path.join(__dirname, 'release', 'deb'),
-    path.join(__dirname, 'release', 'rpm')
+    //path.join(__dirname, 'release', 'tarball'),
+    //path.join(__dirname, 'release', 'appimage'),
+    //path.join(__dirname, 'release', 'deb'),
+    //path.join(__dirname, 'release', 'rpm')
 ];
 
 outputDirs.forEach(dir => {
@@ -65,6 +65,19 @@ outputDirs.forEach(dir => {
 });
 
 console.log('✅ Output directories ready!\n');
+
+// ==================== PARTE 3: COPIAR latest.yml A INSTALLER ====================
+const releaseDir = path.join(__dirname, 'release');
+const installerDir = path.join(__dirname, 'release', 'installer');
+const latestYml = path.join(releaseDir, 'latest.yml');
+const latestYmlDest = path.join(installerDir, 'latest.yml');
+
+if (fs.existsSync(latestYml)) {
+  fs.copyFileSync(latestYml, latestYmlDest);
+  console.log('✅ latest.yml copiado a installer/');
+} else {
+  console.log('ℹ latest.yml no existe aun (se genera despues del build)');
+}
 /*
 
 ---
