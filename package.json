@@ -41,7 +41,7 @@
         "filter": [
           "*.js"
         ]
-      },
+      },  
       "!dist/renderer/.vite",
       "tessdata/**/*"
     ],
