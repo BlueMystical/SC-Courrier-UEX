@@ -29,7 +29,7 @@
     "publish": {
       "provider": "github",
       "owner": "BlueMystical",
-      "repo": "SC-Courrier-UEX",
+      "repo": "Courrier-UEX",
       "releaseType": "release"
     },
     "files": [
