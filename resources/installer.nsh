@@ -1,3 +1,13 @@
+; --- ./resources/installer.nsh
+; ── Fuerza instalación en %LOCALAPPDATA%\Programs\ por defecto ──
+!macro preInit
+  SetShellVarContext current
+  ${If} $InstDir == ""
+    StrCpy $InstDir "$LOCALAPPDATA\Programs\Courrier-UEX"
+  ${EndIf}
+!macroend
+
+; ── Tu código original, sin cambios ──
 !macro customInstall
   ; Verificar si Tesseract esta instalado
   ReadRegStr $0 HKLM "SOFTWARE\Tesseract-OCR" "Install_Dir"

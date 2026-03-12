@@ -29,6 +29,10 @@ const routes = [
     component: () => import('./views/Datarunner/DatarunnerCaptures.vue'),
     meta: { title: 'Datarunner Captures' }
   },
+  {
+    path: '/uex-notifications', name: 'UexNotifications', component: () => import('./views/UexNotifications.vue'),
+    meta: { title: 'UEX Notifications' }
+  },
   // otras rutas aquí
   {
     path: '/:pathMatch(.*)*',

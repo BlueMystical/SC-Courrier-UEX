@@ -4,29 +4,53 @@ const path = require('path');
 
 console.log('📦 Building main process...');
 
+// ==================== PARTE 0: LIMPIAR RELEASE ANTERIOR ====================
+console.log('🧹 Cleaning previous release...');
+
+const releaseDir = path.join(__dirname, 'release');
+const dirsToClean = ['installer', 'win-unpacked'];
+
+dirsToClean.forEach(dir => {
+    const fullPath = path.join(releaseDir, dir);
+    if (fs.existsSync(fullPath)) {
+        fs.rmSync(fullPath, { recursive: true, force: true });
+        console.log(`  ✓ Cleaned: ${dir}/`);
+    }
+});
+
+// También limpiar el latest.yml de la raíz de release
+const oldYml = path.join(releaseDir, 'latest.yml');
+if (fs.existsSync(oldYml)) {
+    fs.unlinkSync(oldYml);
+    console.log('  ✓ Cleaned: latest.yml');
+}
+
+console.log('✅ Release cleaned!\n');
+
 // ==================== PARTE 1: COPIAR ARCHIVOS ====================
 const srcMainDir = path.join(__dirname, 'src/main');
 const srcPreloadDir = path.join(__dirname, 'src/shared');
 const distMainDir = path.join(__dirname, 'dist/main');
-const distPreloadDir = path.join(__dirname, 'dist/preload');
+const distPreloadDir = path.join(__dirname, 'dist/shared');
 
 // Función para copiar archivos recursivamente
 function copyDir(src, dest) {
+    if (!fs.existsSync(src)) {
+        console.error(`  ✗ SOURCE NOT FOUND: ${src}`);  // <-- detecta el problema
+        return;
+    }
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
     }
-
     const entries = fs.readdirSync(src, { withFileTypes: true });
-
     for (const entry of entries) {
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
-
         if (entry.isDirectory()) {
             copyDir(srcPath, destPath);
         } else {
             fs.copyFileSync(srcPath, destPath);
-            console.log(`  ✓ ${entry.name}`);
+            console.log(`  ✓ ${path.relative(__dirname, destPath)}`);
         }
     }
 }
@@ -67,7 +91,6 @@ outputDirs.forEach(dir => {
 console.log('✅ Output directories ready!\n');
 
 // ==================== PARTE 3: COPIAR latest.yml A INSTALLER ====================
-const releaseDir = path.join(__dirname, 'release');
 const installerDir = path.join(__dirname, 'release', 'installer');
 const latestYml = path.join(releaseDir, 'latest.yml');
 const latestYmlDest = path.join(installerDir, 'latest.yml');

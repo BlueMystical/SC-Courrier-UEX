@@ -2,9 +2,9 @@
 
 // src/main/ipcHandlers.js
 
-const { app, ipcMain, dialog, BrowserWindow } = require('electron')
+const { app, ipcMain, dialog, BrowserWindow, shell } = require('electron')
 const path = require('path')
-const fs   = require('fs')
+const fs = require('fs')
 
 const windowManager = require('./windowManager')
 const uexService = require('./services/uexService')
@@ -55,8 +55,7 @@ function registerIpcHandlers({ createTray, destroyTray, registerShortcuts, initS
 
     ipcMain.handle('uex:getTerminals', async () => {
         try {
-            const terminals = uexCache.get('terminals') || []
-
+            const terminals = uexCache.get('terminals') || [];
             return {
                 success: true,
                 terminals
@@ -89,6 +88,30 @@ function registerIpcHandlers({ createTray, destroyTray, registerShortcuts, initS
         return true
     })
 
+    ipcMain.handle('items:getAll', () => {
+        return itemCacheService.getItems()
+    })
+
+    ipcMain.handle('items:getCategories', () => {
+        return itemCacheService.getCategories()
+    })
+
+    ipcMain.handle('items:getSyncStatus', () => {
+        return itemCacheService.getStatus()
+    })
+
+    ipcMain.handle('items:isCacheFresh', () => {
+        return itemCacheService.isCacheFresh()
+    })
+
+    ipcMain.handle('items:forceSync', () => {
+        itemCacheService.forceSync()
+        return itemCacheService.getStatus()
+    })
+
+    // #endregion
+
+
     ipcMain.handle('uex:submitData', async (event, payload) => {
         return await uexService.submitData(payload)
     })
@@ -101,6 +124,7 @@ function registerIpcHandlers({ createTray, destroyTray, registerShortcuts, initS
         settingsHelper.setSetting('settings/security/user/token', token)
         return true
     })
+
 
     // #endregion
 
@@ -195,6 +219,9 @@ function registerIpcHandlers({ createTray, destroyTray, registerShortcuts, initS
 
     // #endregion
 
+    ipcMain.handle('uex:getNotifications', async () => {
+        return await uexService.getUserNotifications()
+    })
 }
 
 module.exports = { registerIpcHandlers }

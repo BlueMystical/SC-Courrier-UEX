@@ -7,7 +7,8 @@
 
                 <template #item="{ item, props, hasSubmenu }">
                     <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-                        <a v-ripple :href="href" v-bind="props.action" @click="navigate" class="flex align-items-center">
+                        <a v-ripple :href="href" v-bind="props.action" @click="navigate"
+                            class="flex align-items-center">
                             <img v-if="item.image" :src="item.image" :alt="item.label" class="menu-item-image" />
                             <span v-else-if="item.icon" :class="item.icon" />
                             <span class="ml-2">{{ item.label }}</span>
@@ -61,6 +62,25 @@
         <div class="card mt-2">
             <router-view />
         </div>
+
+        <!-- Barra de progreso de actualización -->
+        <Transition name="slide-down">
+            <div v-if="updateStatus.visible" class="update-progress-bar">
+                <div class="update-progress-inner">
+                    <span class="update-progress-icon pi pi-download"></span>
+                    <span class="update-progress-text">
+                        {{ updateStatus.message }}
+                    </span>
+                    <div v-if="updateStatus.percent > 0" class="update-progress-track">
+                        <div class="update-progress-fill" :style="{ width: updateStatus.percent + '%' }"></div>
+                    </div>
+                    <span v-if="updateStatus.percent > 0" class="update-progress-pct">
+                        {{ updateStatus.percent }}%
+                    </span>
+                </div>
+            </div>
+        </Transition>
+
     </div>
 </template>
 
@@ -100,6 +120,9 @@ let intervaloInactividad = null;
 // Convertimos los minutos a milisegundos de forma reactiva
 const TIEMPO_LIMITE_MS = computed(() => idleMinutes.value * 60 * 1000);
 
+// ── UPDATE PROGRESS ──────────────────────────────────────
+const updateStatus = ref({ visible: false, message: '', percent: 0 })
+
 const registrarInteraccion = () => {
     if (store.currentUser) {
         store.updateActivity();
@@ -124,15 +147,15 @@ const verificarInactividad = () => {
 };
 
 async function checkUEXToken() {
-  const hasToken = await window.api.UEX.checkToken()
+    const hasToken = await window.api.UEX.checkToken()
 
-  if (!hasToken) {
-    notify.sticky(
-      'Debes configurar tu UEX API Token para habilitar la subida de datos.',
-      'UEX no configurado',
-      'warn'
-    )
-  }
+    if (!hasToken) {
+        notify.sticky(
+            'Debes configurar tu UEX API Token para habilitar la subida de datos.',
+            'UEX no configurado',
+            'warn'
+        )
+    }
 }
 
 // Computed para ocultar/mostrar menubar
@@ -191,6 +214,41 @@ function applyDarkClass(mode) {
     }
 }
 
+// Mostrar las últimas 3 notificaciones no leídas al arrancar
+async function checkUEXNotifications() {
+    if (!store.currentUser) return
+    try {
+        const result = await window.api.UEX.getNotifications()
+        if (!result.success || !result.data?.length) return
+
+        // Leer IDs ya vistos
+        const savedIds = await window.api.Settings.get('settings/uex/readNotifications') || []
+        const readSet = new Set(savedIds)
+
+        const unread = result.data
+            .filter(n => !readSet.has(n.id) && !(n.date_read > 0))
+            .sort((a, b) => b.date_added - a.date_added)
+            .slice(0, 3)
+
+        if (unread.length === 0) return
+
+        // Pequeño delay para que la app cargue primero
+        setTimeout(() => {
+            unread.forEach((n, i) => {
+                setTimeout(() => {
+                    const link = n.redir
+                        ? ` <a href="https://uexcorp.space/${n.redir}" target="_blank" style="color:white;text-decoration:underline;">View on UEX</a>`
+                        : ''
+                    notify.alert(`${n.message}${link}`, 'UEX Notification')
+                }, i * 400)
+            })
+        }, 2000)
+
+    } catch (e) {
+        console.warn('[Notifications] Could not load UEX notifications:', e.message)
+    }
+}
+
 onMounted(async () => {
     initNetworkMonitor();
 
@@ -230,10 +288,40 @@ onMounted(async () => {
     }
 
     await checkUEXToken()
+    await checkUEXNotifications()
 
     window.api?.Navigation?.onNavigateTo((ruta) => {
         router.push(ruta)
     })
+
+    // Escuchar estado del updater
+    window.api.on('update-status', (data) => {
+        switch (data.status) {
+            case 'checking':
+                // silencioso, no mostrar nada
+                break
+            case 'downloading':
+                updateStatus.value = {
+                    visible: true,
+                    message: `Downloading update... ${data.speed ? data.speed + ' KB/s' : ''}`,
+                    percent: data.percent || 0
+                }
+                break
+            case 'downloaded':
+                updateStatus.value = {
+                    visible: true,
+                    message: `v${data.version} ready — restart to install`,
+                    percent: 100
+                }
+                break
+            case 'error':
+                updateStatus.value = { visible: false, message: '', percent: 0 }
+                break
+            default:
+                updateStatus.value = { visible: false, message: '', percent: 0 }
+        }
+    })
+
 });
 
 onUnmounted(() => {
@@ -349,5 +437,59 @@ body,
 :deep(.p-menubar-item-link:hover) .menu-shortcut-badge {
     background: var(--p-primary-color);
     color: white;
+}
+
+.update-progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: var(--p-primary-color);
+    color: white;
+    padding: 0.4rem 1rem;
+}
+
+.update-progress-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 100%;
+}
+
+.update-progress-track {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.update-progress-fill {
+    height: 100%;
+    background: white;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.update-progress-text {
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.update-progress-pct {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+    transition: transform 0.3s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+    transform: translateY(100%);
 }
 </style>

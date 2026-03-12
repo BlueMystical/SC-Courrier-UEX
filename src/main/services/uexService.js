@@ -1,7 +1,7 @@
 // src/main/services/uexService.js
 // UEX Service: Handles communication with the UEX API, including token management and data submission.
 
-const { post } = require('./uexApi')
+const { post, request } = require('./uexApi')
 const settingsHelper = require('../helpers/settingsHelper')
 
 const APP_BEARER = process.env.UEX_APP_TOKEN
@@ -57,7 +57,21 @@ async function submitData(payload) {
   }
 }
 
-module.exports = {
-  submitData,
-  hasToken
+async function getUserNotifications() {
+  try {
+    const { userSecret } = validateTokens()
+
+    const response = await request('GET', '/user_notifications', null, {
+      Authorization: `Bearer ${APP_BEARER}`,
+      'secret-key': userSecret
+    })
+
+    return { success: true, data: response.data || [] }
+
+  } catch (error) {
+    console.error('[UEX] ❌ Get notifications failed:', error.message)
+    return { success: false, error: error.message, data: [] }
+  }
 }
+
+module.exports = { submitData, hasToken, getUserNotifications }

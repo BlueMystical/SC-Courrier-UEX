@@ -31,7 +31,7 @@ function createWindow(id, route = '/', options = {}) {
         useContentSize: true, // <--- IMPORTANTE: Hace que el área de Vue mida exactamente 961x650
         show: false,
         icon: iconPath,
-        title: packageJson.productName || 'Courrier-UEX',
+        title: `${packageJson.productName || 'Courrier-UEX'} v${packageJson.version}`,
         backgroundColor: '#ffffff',
         webPreferences: {
             preload: path.join(__dirname, '../shared/preload.js'),
@@ -58,10 +58,16 @@ function createWindow(id, route = '/', options = {}) {
         })
     }
 
-    // Atajo local para DevTools (Solo F12 o Shift+F1 dentro de la App)
+    // Atajo local para DevTools 
     win.webContents.on('before-input-event', (event, input) => {
-        if ((input.control && input.shift && input.key.toLowerCase() === 'i') ||
-            (input.shift && input.key.toLowerCase() === 'f1')) {
+        // Ctrl+Shift+I o Shift+F1 → DevTools (dev)
+        // F1 → DevTools (dev Y prod)
+        const isDevToolsShortcut =
+            (input.control && input.shift && input.key.toLowerCase() === 'i') ||
+            (input.shift && input.key.toLowerCase() === 'f1') ||
+            (input.key === 'F1')  // ← F1 solo, funciona en prod también
+
+        if (isDevToolsShortcut) {
             if (win.webContents.isDevToolsOpened()) {
                 win.webContents.closeDevTools()
             } else {
@@ -69,7 +75,7 @@ function createWindow(id, route = '/', options = {}) {
             }
             event.preventDefault()
         }
-    });
+    })
 
     // Interceptar navegación de links (cuando el usuario hace click)
     win.webContents.on('will-navigate', (event, url) => {

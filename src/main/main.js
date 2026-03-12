@@ -5,7 +5,6 @@
 const { app, globalShortcut, Tray, Menu, nativeImage, session } = require('electron')
 require('dotenv').config()
 const path = require('path')
-const packageJson = require('../../package.json')
 const fs = require('fs')
 const { setupAutoUpdater, checkForUpdates } = require('./updater')
 
@@ -13,6 +12,7 @@ const { setupAutoUpdater, checkForUpdates } = require('./updater')
 
 // #region --- Identity configuration ---
 
+const packageJson = require(path.resolve(__dirname, '../../package.json'))
 const appName = packageJson.productName || 'Courrier-UEX';
 app.name = appName;
 
@@ -26,7 +26,7 @@ if (process.env.VITE_DEV_SERVER_URL) {
 // #region --- Dependencies, Own modules ---
 
 const windowManager = require('./windowManager')
-const fileHelper = require('./helpers/fileHelper')
+const fileHelper = require('./helpers/FileHelper')
 const { registerIpcHandlers } = require('./ipcHandlers')
 const settingsHelper = require('./helpers/settingsHelper')
 const { routeMap } = require('../shared/shortcutsConfig.cjs')
@@ -147,6 +147,12 @@ function initScreenshotWatcher(win) {
 
 // #region --- App lifecycle ---
 
+// Forzar instancia única
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) {
+  app.quit()
+}
+
 app.whenReady().then(async () => {
   try {
 
@@ -216,7 +222,8 @@ app.whenReady().then(async () => {
       itemCacheService.startBackgroundSync(win)
     })
 
-    setupAutoUpdater()
+    // Buscar Actualizaciones
+    setupAutoUpdater(win)
 
     // Verificar al arrancar, con un delay para que la app cargue primero
     setTimeout(() => checkForUpdates(), 5000)

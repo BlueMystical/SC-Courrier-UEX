@@ -1,7 +1,7 @@
 {
   "name": "courrier-uex",
   "productName": "Courrier-UEX",
-  "version": "0.3.1",
+  "version": "0.3.10",
   "description": "Data Courrier for UEX Corp.",
   "keywords": [],
   "author": "BlueMystic",
@@ -15,7 +15,7 @@
     "build": "npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
     "build:main": "node build-main.js",
-    "build:win": "npm run build && electron-builder --win && npm run copy:latest",
+    "build:win": "npm run build && electron-builder --win",
     "copy:latest": "node -e \"const fs=require('fs'),path=require('path');const src=path.join(__dirname,'release','latest.yml');const dst=path.join(__dirname,'release','installer','latest.yml');if(fs.existsSync(src)){fs.copyFileSync(src,dst);console.log('latest.yml copiado OK');}\"",
     "prod": "npm run build && electron ."
   },
@@ -35,13 +35,6 @@
     "files": [
       "dist/**/*",
       "package.json",
-      {
-        "from": "src/main",
-        "to": "dist/main",
-        "filter": [
-          "*.js"
-        ]
-      },  
       "!dist/renderer/.vite",
       "tessdata/**/*"
     ],
@@ -77,13 +70,15 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "allowElevation": true,
+      "allowElevation": false,
       "perMachine": false,
+      "selectPerMachineByDefault": false,
       "runAfterFinish": true,
       "menuCategory": true,
       "shortcutName": "Courrier-UEX",
-      "artifactName": "installer/${productName} Setup ${version}.${ext}",
-      "include": "resources/installer.nsh"
+      "include": "resources/installer.nsh",
+      "artifactName": "courrier-uex-setup-${version}.${ext}",
+      "differentialPackage": false
     }
   },
   "devDependencies": {
@@ -100,6 +95,7 @@
     "@primevue/themes": "^4.5.4",
     "axios": "^1.13.5",
     "dotenv": "^17.3.1",
+    "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
     "fuse.js": "^7.1.0",
     "pinia": "^3.0.4",

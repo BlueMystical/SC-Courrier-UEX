@@ -168,6 +168,7 @@ contextBridge.exposeInMainWorld('api', {
     submitCommodity: (data) => ipcRenderer.invoke('uex:submitCommodity', data),
     submitItem: (data) => ipcRenderer.invoke('uex:submitItem', data),
     getCache: () => ipcRenderer.invoke('uex:getCache'),
+    getNotifications: () => ipcRenderer.invoke('uex:getNotifications'),  // ← agregar
   },
 
   // ── ITEM CACHE ─────────────────────────────────────────────────────────────

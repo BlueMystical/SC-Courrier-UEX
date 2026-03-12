@@ -76,4 +76,4 @@ function post(endpoint, body, headers = {}) {
   return request('POST', endpoint, body, headers)
 }
 
-module.exports = { get, post }
+module.exports = { get, post, request }

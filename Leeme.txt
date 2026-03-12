@@ -23,12 +23,31 @@ chmod +x linux-build.sh
 https://github.com/settings/tokens
 
 
+----------------------------------------------------------------
+https://uexcorp.space/login
+https://uexcorp.space/data/home/
+https://uexcorp.space/api/documentation
+
+https://uexcorp.space/data/home/type/commodity/?only_my_reports=1
+https://uexcorp.space/data/monitor
+
+https://uexcorp.space/api/documentation/id/post_data_submit/
+
+%APPDATA%\Courrier-UEX\settings.json
+%APPDATA%\Courrier-UEX\logs\
+%LOCALAPPDATA%\Programs\Courrier-UEX\
+
+C:\Program Files\Roberts Space Industries\StarCitizen\LIVE\screenshots
+
+https://github.com/BlueMystical/Courrier-UEX
+----------------------------------------------------------------
+
 
 -- Publicar una nueva Version:
 # 1. Subir versión en package.json (ej: 1.0.0 → 1.1.0)
 # 2. Compilar y publicar directo a GitHub
 
-npm run build:prod:win
+npm run build:win
 publish.bat
 
 -- Archivos publicados en el Release:
